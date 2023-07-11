@@ -2,11 +2,14 @@ import type { ActionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { useActionData } from "@remix-run/react";
 import { badRequest, db } from "~/utils/db.server";
+import { validateLength } from "~/utils/helpers";
+import { requireUserId } from "~/utils/session.server";
 
 export const action = async ({ request }: ActionArgs) => {
   const form = await request.formData();
   const content = form.get("content");
   const name = form.get("name");
+  const userId = await requireUserId(request);
 
   // we do this type check to be extra sure and to make TypeScript happy
   // we'll explore validation next!
@@ -19,8 +22,8 @@ export const action = async ({ request }: ActionArgs) => {
   }
 
   const fieldErrors = {
-    content: validateJokeContent(content),
-    name: validateJokeName(name),
+    content: validateLength(content, 10, "That joke is too short"),
+    name: validateLength(name, 3, "That joke's name is too short"),
   };
 
   const fields = { content, name };
@@ -31,22 +34,10 @@ export const action = async ({ request }: ActionArgs) => {
       formError: null,
     });
   }
-  const joke = await db.joke.create({ data: fields });
+  const joke = await db.joke.create({ data: { ...fields, jokesterId: userId } });
 
   return redirect(`/jokes/${joke.id}`);
 };
-
-function validateJokeContent(content: string) {
-  if (content.length < 10) {
-    return "That joke is too short";
-  }
-}
-
-function validateJokeName(name: string) {
-  if (name.length < 3) {
-    return "That joke's name is too short";
-  }
-}
 
 export default function NewJokeRoute() {
   const actionData = useActionData<typeof action>();
