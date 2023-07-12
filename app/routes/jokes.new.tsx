@@ -34,7 +34,10 @@ export const action = async ({ request }: ActionArgs) => {
       formError: null,
     });
   }
-  const joke = await db.joke.create({ data: { ...fields, jokesterId: userId } });
+
+  const joke = await db.joke.create({
+    data: { ...fields, jokesterId: userId },
+  });
 
   return redirect(`/jokes/${joke.id}`);
 };
