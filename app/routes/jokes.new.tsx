@@ -1,14 +1,17 @@
 import type { ActionArgs, LoaderArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import {
+  Form,
   isRouteErrorResponse,
   Link,
   useActionData,
+  useNavigation,
   useRouteError,
 } from "@remix-run/react";
 import { badRequest, db } from "~/utils/db.server";
 import { validateLength } from "~/utils/helpers";
 import { getUserId, requireUserId } from "~/utils/session.server";
+import { JokeDisplay } from "~/components/joke";
 
 export const loader = async ({ request }: LoaderArgs) => {
   const userId = await getUserId(request);
@@ -18,6 +21,11 @@ export const loader = async ({ request }: LoaderArgs) => {
   }
   return json({});
 };
+
+const validateContent = (c: string) =>
+  validateLength(c, 10, "That joke is too short");
+const validateName = (n: string) =>
+  validateLength(n, 3, "That joke's name is too short");
 
 export const action = async ({ request }: ActionArgs) => {
   const form = await request.formData();
@@ -36,8 +44,8 @@ export const action = async ({ request }: ActionArgs) => {
   }
 
   const fieldErrors = {
-    content: validateLength(content, 10, "That joke is too short"),
-    name: validateLength(name, 3, "That joke's name is too short"),
+    content: validateContent(content),
+    name: validateName(name),
   };
 
   const fields = { content, name };
@@ -75,11 +83,32 @@ export function ErrorBoundary() {
 
 export default function NewJokeRoute() {
   const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+
+  if (navigation.formData) {
+    const content = navigation.formData.get("content");
+    const name = navigation.formData.get("name");
+
+    if (
+      typeof content === "string" &&
+      typeof name === "string" &&
+      !validateContent(content) &&
+      !validateName(name)
+    ) {
+      return (
+        <JokeDisplay
+          canDelete={false}
+          isOwner={true}
+          joke={{ name, content }}
+        />
+      );
+    }
+  }
 
   return (
     <div>
       <p>Add your own hilarious joke</p>
-      <form method="post">
+      <Form method="post">
         <div>
           <label>
             Name:{" "}
@@ -131,7 +160,7 @@ export default function NewJokeRoute() {
             Add
           </button>
         </div>
-      </form>
+      </Form>
     </div>
   );
 }
