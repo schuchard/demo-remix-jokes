@@ -1,9 +1,23 @@
-import type { ActionArgs } from "@remix-run/node";
-import { redirect } from "@remix-run/node";
-import { useActionData } from "@remix-run/react";
+import type { ActionArgs, LoaderArgs } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
+import {
+  isRouteErrorResponse,
+  Link,
+  useActionData,
+  useRouteError,
+} from "@remix-run/react";
 import { badRequest, db } from "~/utils/db.server";
 import { validateLength } from "~/utils/helpers";
-import { requireUserId } from "~/utils/session.server";
+import { getUserId, requireUserId } from "~/utils/session.server";
+
+export const loader = async ({ request }: LoaderArgs) => {
+  const userId = await getUserId(request);
+
+  if (!userId) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+  return json({});
+};
 
 export const action = async ({ request }: ActionArgs) => {
   const form = await request.formData();
@@ -43,10 +57,19 @@ export const action = async ({ request }: ActionArgs) => {
 };
 
 export function ErrorBoundary() {
-  return (
+  const error = useRouteError();
+  if (isRouteErrorResponse(error) && error.status === 401) {
+    return (
       <div className="error-container">
-        Something unexpected went wrong. Sorry about that.
+        <p>You must be logged in to create a joke.</p>
+        <Link to="/login">Login</Link>
       </div>
+    );
+  }
+  return (
+    <div className="error-container">
+      Something unexpected went wrong. Sorry about that.
+    </div>
   );
 }
 
