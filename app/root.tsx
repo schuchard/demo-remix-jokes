@@ -1,13 +1,10 @@
 import type { LinksFunction } from "@remix-run/node";
-import {
-  Links,
-  LiveReload,
-  Outlet,
-} from "@remix-run/react";
+import { Links, LiveReload, Outlet, useRouteError } from "@remix-run/react";
 
 import globalLargeStylesUrl from "~/styles/global-large.css";
 import globalMediumStylesUrl from "~/styles/global-medium.css";
 import globalStylesUrl from "~/styles/global.css";
+import type { PropsWithChildren } from "react";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: globalStylesUrl },
@@ -25,20 +22,43 @@ export const links: LinksFunction = () => [
 
 export default function App() {
   return (
-    <html lang="en">
+    <Document>
+      <Outlet />
+    </Document>
+  );
+}
+
+function Document({
+  children,
+  title = "Remix: So great, it's funny!",
+}: PropsWithChildren<{ title?: string }>) {
+  return (
+    <html>
       <head>
         <meta charSet="utf-8" />
-        <meta
-          name="viewport"
-          content="width=device-width,initial-scale=1"
-        />
-        <title>Remix: So great, it's funny!</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>{title}</title>
         <Links />
       </head>
       <body>
-        <Outlet />
+        {children}
         <LiveReload />
       </body>
     </html>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+  return (
+    <Document title="Uh-oh!">
+      <div className="error-container">
+        <h1>App Error</h1>
+        <pre>{errorMessage}</pre>
+      </div>
+    </Document>
   );
 }
