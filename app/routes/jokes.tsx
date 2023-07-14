@@ -35,6 +35,8 @@ export default function JokesRoute() {
           </h1>
           {data.user ? (
             <div className="user-info">
+              <Link reloadDocument={true} to="/jokes.rss">RSS</Link>
+              <Link reloadDocument={true} to="/jokes.json">JSON</Link>
               <span>{`Hi ${data.user.username}`}</span>
               <Form action="/logout" method="post">
                 <button type="submit" className="button">
